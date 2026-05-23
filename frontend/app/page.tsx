@@ -85,17 +85,17 @@ export default function Home() {
   }
 
   async function loadData() {
-    const requestsResponse = await fetch("http://localhost:3333/requests");
+    const requestsResponse = await fetch("https://apoiorede-crm.onrender.com/requests");
     const requestsData = await requestsResponse.json();
     setRequests(requestsData);
 
-    const clinicsResponse = await fetch("http://localhost:3333/clinics");
+    const clinicsResponse = await fetch("https://apoiorede-crm.onrender.com/clinics");
     const clinicsData = await clinicsResponse.json();
     setClinics(clinicsData);
   }
 
   async function createClinic() {
-    await fetch("http://localhost:3333/clinics", {
+    await fetch("https://apoiorede-crm.onrender.com/clinics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: clinicName, city: clinicCity, state: clinicState, whatsapp: clinicWhatsapp }),
@@ -109,7 +109,7 @@ export default function Home() {
   }
 
   async function createRequest() {
-    await fetch("http://localhost:3333/requests", {
+    await fetch("https://apoiorede-crm.onrender.com/requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ patientName, procedure, city, observation, clinicId: clinicId || null }),
@@ -124,7 +124,7 @@ export default function Home() {
   }
 
   async function updateStatus(id: string, status: string) {
-    await fetch(`http://localhost:3333/requests/${id}/status`, {
+    await fetch(`https://apoiorede-crm.onrender.com/requests/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -136,7 +136,7 @@ export default function Home() {
   async function deleteRequest(id: string) {
     if (!confirm("Deseja excluir esta solicitação?")) return;
 
-    await fetch(`http://localhost:3333/requests/${id}`, {
+    await fetch(`https://apoiorede-crm.onrender.com/requests/${id}`, {
       method: "DELETE",
     });
 
