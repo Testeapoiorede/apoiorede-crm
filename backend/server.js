@@ -13,40 +13,62 @@ app.get("/", (req, res) => {
 });
 
 app.post("/auth/register", async (req, res) => {
-  const user = await prisma.user.create({
-    data: {
-      name: req.body.name,
-      email: req.body.email,
-      password: req.body.password,
-      role: req.body.role || "OPERADOR",
-    },
-  });
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        role: req.body.role || "OPERADOR",
+      },
+    });
 
-  res.json(user);
+    res.json({
+      message: "Cadastro realizado com sucesso",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: "Erro ao cadastrar usuário",
+      details: error.message,
+    });
+  }
 });
 
 app.post("/auth/login", async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      email: req.body.email,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: req.body.email,
+      },
+    });
 
-  if (!user || user.password !== req.body.password) {
-    return res.status(401).json({
-      error: "E-mail ou senha inválidos",
+    if (!user || user.password !== req.body.password) {
+      return res.status(401).json({
+        error: "E-mail ou senha inválidos",
+      });
+    }
+
+    res.json({
+      message: "Login realizado com sucesso",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: "Erro ao fazer login",
+      details: error.message,
     });
   }
-
-  res.json({
-    message: "Login realizado com sucesso",
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  });
 });
 
 app.get("/clinics", async (req, res) => {
@@ -132,8 +154,8 @@ app.delete("/requests/:id", async (req, res) => {
   res.json({ message: "Solicitação excluída com sucesso" });
 });
 
-app.listen(3333, () => {
-  console.log("Servidor rodando na porta 3333");
-});
+const PORT = process.env.PORT || 3333;
 
-process.stdin.resume();
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
