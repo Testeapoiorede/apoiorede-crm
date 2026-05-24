@@ -59,10 +59,29 @@ app.post("/auth/login", async (req, res) => {
       });
     }
 
-    const passwordMatch = await bcrypt.compare(
-      req.body.password,
-      user.password
-    );
+    let passwordMatch = false;
+
+    if (user.password.startsWith("$2b$")) {
+      passwordMatch = await bcrypt.compare(
+        req.body.password,
+        user.password
+      );
+    } else {
+      passwordMatch = req.body.password === user.password;
+
+      if (passwordMatch) {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+        await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            password: hashedPassword,
+          },
+        });
+      }
+    }
 
     if (!passwordMatch) {
       return res.status(401).json({
@@ -91,6 +110,7 @@ app.post("/auth/login", async (req, res) => {
 
 app.get("/clinics", async (req, res) => {
   const clinics = await prisma.clinic.findMany();
+
   res.json(clinics);
 });
 
