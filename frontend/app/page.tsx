@@ -29,6 +29,7 @@ export default function Home() {
   const [filter, setFilter] = useState("TODOS");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
+  const [activePage, setActivePage] = useState("DASHBOARD");
 
   const [showRequestModal, setShowRequestModal] =
     useState(false);
@@ -480,24 +481,21 @@ export default function Home() {
 
           <nav style={navStyle}>
             <span style={navActive}>
-              📊 Dashboard
-            </span>
+<button onClick={() => setActivePage("DASHBOARD")} style={activePage === "DASHBOARD" ? navActive : navButton}>
+  📊 Dashboard
+</button>
 
-            <span style={navItem}>
-              📝 Solicitações
-            </span>
+<button onClick={() => setActivePage("SOLICITACOES")} style={activePage === "SOLICITACOES" ? navActive : navButton}>
+  📝 Solicitações
+</button>
 
-            <span style={navItem}>
-              🏥 Clínicas
-            </span>
+<button onClick={() => setActivePage("CLINICAS")} style={activePage === "CLINICAS" ? navActive : navButton}>
+  🏥 Clínicas
+</button>
 
-            <span style={navItem}>
-              📈 Métricas
-            </span>
-          </nav>
-        </div>
-
-        <button
+<button onClick={() => setActivePage("METRICAS")} style={activePage === "METRICAS" ? navActive : navButton}>
+  📈 Métricas
+</button>
           onClick={logout}
           style={logoutButton}
         >
@@ -1025,6 +1023,15 @@ const navActive = {
 
 const navItem = {
   padding: 12,
+};
+const navButton = {
+  padding: 12,
+  border: 0,
+  borderRadius: 12,
+  background: "transparent",
+  color: "white",
+  textAlign: "left" as const,
+  cursor: "pointer",
 };
 
 const logoutButton = {
