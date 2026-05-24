@@ -36,6 +36,8 @@ app.post("/auth/register", async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
+
     res.status(400).json({
       error: "Erro ao cadastrar usuário",
       details: error.message,
@@ -78,6 +80,8 @@ app.post("/auth/login", async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
+
     res.status(400).json({
       error: "Erro ao fazer login",
       details: error.message,
@@ -165,7 +169,9 @@ app.delete("/requests/:id", async (req, res) => {
     },
   });
 
-  res.json({ message: "Solicitação excluída com sucesso" });
+  res.json({
+    message: "Solicitação excluída com sucesso",
+  });
 });
 
 const PORT = process.env.PORT || 3333;
