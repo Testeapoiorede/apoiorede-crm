@@ -12,6 +12,34 @@ app.use(express.json());
 
 const JWT_SECRET = "apoiorede_secret_key";
 
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Acesso não autorizado" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (error, user) => {
+    if (error) {
+      return res.status(403).json({ error: "Token inválido" });
+    }
+
+    req.user = user;
+    next();
+  });
+}
+
+function requireAdmin(req, res, next) {
+  if (req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      error: "Apenas administradores podem realizar esta ação",
+    });
+  }
+
+  next();
+}
+
 app.get("/", (req, res) => {
   res.send("API ApoioRede funcionando 🚀");
 });
@@ -36,9 +64,7 @@ app.post("/auth/register", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     );
 
     res.json({
@@ -78,10 +104,7 @@ app.post("/auth/login", async (req, res) => {
     let passwordMatch = false;
 
     if (user.password.startsWith("$2b$")) {
-      passwordMatch = await bcrypt.compare(
-        req.body.password,
-        user.password
-      );
+      passwordMatch = await bcrypt.compare(req.body.password, user.password);
     } else {
       passwordMatch = req.body.password === user.password;
 
@@ -112,9 +135,7 @@ app.post("/auth/login", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     );
 
     res.json({
@@ -137,13 +158,12 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-app.get("/clinics", async (req, res) => {
+app.get("/clinics", authenticateToken, async (req, res) => {
   const clinics = await prisma.clinic.findMany();
-
   res.json(clinics);
 });
 
-app.post("/clinics", async (req, res) => {
+app.post("/clinics", authenticateToken, requireAdmin, async (req, res) => {
   const clinic = await prisma.clinic.create({
     data: {
       name: req.body.name,
@@ -156,7 +176,7 @@ app.post("/clinics", async (req, res) => {
   res.json(clinic);
 });
 
-app.get("/requests", async (req, res) => {
+app.get("/requests", authenticateToken, async (req, res) => {
   const requests = await prisma.request.findMany({
     include: {
       clinic: true,
@@ -166,7 +186,7 @@ app.get("/requests", async (req, res) => {
   res.json(requests);
 });
 
-app.post("/requests", async (req, res) => {
+app.post("/requests", authenticateToken, async (req, res) => {
   const request = await prisma.request.create({
     data: {
       patientName: req.body.patientName,
@@ -181,7 +201,7 @@ app.post("/requests", async (req, res) => {
   res.json(request);
 });
 
-app.put("/requests/:id", async (req, res) => {
+app.put("/requests/:id", authenticateToken, async (req, res) => {
   const request = await prisma.request.update({
     where: {
       id: req.params.id,
@@ -198,7 +218,7 @@ app.put("/requests/:id", async (req, res) => {
   res.json(request);
 });
 
-app.put("/requests/:id/status", async (req, res) => {
+app.put("/requests/:id/status", authenticateToken, async (req, res) => {
   const request = await prisma.request.update({
     where: {
       id: req.params.id,
@@ -211,7 +231,7 @@ app.put("/requests/:id/status", async (req, res) => {
   res.json(request);
 });
 
-app.delete("/requests/:id", async (req, res) => {
+app.delete("/requests/:id", authenticateToken, requireAdmin, async (req, res) => {
   await prisma.request.delete({
     where: {
       id: req.params.id,
