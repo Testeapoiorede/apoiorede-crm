@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const API_URL = "https://apoiorede-crm.onrender.com";
+
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [isLogin, setIsLogin] = useState(true);
@@ -30,16 +32,16 @@ export default function Home() {
 
   useEffect(() => {
     const savedUser = localStorage.getItem("apoiorede_user");
+    const savedToken = localStorage.getItem("apoiorede_token");
 
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
+    if (savedUser && savedToken) {
+      setUser(JSON.parse(savedUser));
       loadData();
     }
   }, []);
 
   async function register() {
-    const response = await fetch("https://apoiorede-crm.onrender.com/auth/register", {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
@@ -48,28 +50,29 @@ export default function Home() {
     const data = await response.json();
 
     if (response.ok) {
-      setMessage("Usuário cadastrado com sucesso ✅");
-      setIsLogin(true);
-      setName("");
-      setEmail("");
-      setPassword("");
+      localStorage.setItem("apoiorede_user", JSON.stringify(data.user));
+      localStorage.setItem("apoiorede_token", data.token);
+      setUser(data.user);
+      setMessage("");
+      loadData();
     } else {
       setMessage(data.error || "Erro ao cadastrar");
     }
   }
 
   async function login() {
- const response = await fetch("https://apoiorede-crm.onrender.com/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email, password }),
-});
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
     const data = await response.json();
 
     if (response.ok) {
-      setUser(data.user);
       localStorage.setItem("apoiorede_user", JSON.stringify(data.user));
+      localStorage.setItem("apoiorede_token", data.token);
+      setUser(data.user);
       setMessage("");
       loadData();
     } else {
@@ -79,23 +82,24 @@ export default function Home() {
 
   function logout() {
     localStorage.removeItem("apoiorede_user");
+    localStorage.removeItem("apoiorede_token");
     setUser(null);
     setEmail("");
     setPassword("");
   }
 
   async function loadData() {
-    const requestsResponse = await fetch("https://apoiorede-crm.onrender.com/requests");
+    const requestsResponse = await fetch(`${API_URL}/requests`);
     const requestsData = await requestsResponse.json();
     setRequests(requestsData);
 
-    const clinicsResponse = await fetch("https://apoiorede-crm.onrender.com/clinics");
+    const clinicsResponse = await fetch(`${API_URL}/clinics`);
     const clinicsData = await clinicsResponse.json();
     setClinics(clinicsData);
   }
 
   async function createClinic() {
-    await fetch("https://apoiorede-crm.onrender.com/clinics", {
+    await fetch(`${API_URL}/clinics`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: clinicName, city: clinicCity, state: clinicState, whatsapp: clinicWhatsapp }),
@@ -109,7 +113,7 @@ export default function Home() {
   }
 
   async function createRequest() {
-    await fetch("https://apoiorede-crm.onrender.com/requests", {
+    await fetch(`${API_URL}/requests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ patientName, procedure, city, observation, clinicId: clinicId || null }),
@@ -124,7 +128,7 @@ export default function Home() {
   }
 
   async function updateStatus(id: string, status: string) {
-    await fetch(`https://apoiorede-crm.onrender.com/requests/${id}/status`, {
+    await fetch(`${API_URL}/requests/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -136,7 +140,7 @@ export default function Home() {
   async function deleteRequest(id: string) {
     if (!confirm("Deseja excluir esta solicitação?")) return;
 
-    await fetch(`https://apoiorede-crm.onrender.com/requests/${id}`, {
+    await fetch(`${API_URL}/requests/${id}`, {
       method: "DELETE",
     });
 
@@ -153,10 +157,10 @@ export default function Home() {
     return (
       <main style={loginPageStyle}>
         <section style={loginCardStyle}>
-          <h1>ApoioRede</h1>
-          <p>CRM operacional odontológico</p>
+          <h1 style={{ margin: 0, fontSize: 30 }}>ApoioRede</h1>
+          <p style={{ color: "#64748b" }}>CRM operacional odontológico</p>
 
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 10, margin: "22px 0" }}>
             <button onClick={() => setIsLogin(true)} style={isLogin ? activeTab : inactiveTab}>Login</button>
             <button onClick={() => setIsLogin(false)} style={!isLogin ? activeTab : inactiveTab}>Cadastro</button>
           </div>
@@ -164,89 +168,75 @@ export default function Home() {
           {!isLogin && <input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />}
 
           <input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
-
           <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} />
 
-          <button onClick={isLogin ? login : register} style={buttonStyle}>
+          <button onClick={isLogin ? login : register} style={primaryButton}>
             {isLogin ? "Entrar" : "Cadastrar"}
           </button>
 
-          {message && <p style={{ color: "#2563eb", fontWeight: "bold" }}>{message}</p>}
+          {message && <p style={{ color: "#dc2626", fontWeight: "bold" }}>{message}</p>}
         </section>
       </main>
     );
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#eef2f7", fontFamily: "Arial" }}>
-      <style>{`
-        @media (max-width: 900px) {
-          .header {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 16px;
-          }
-
-          .dashboard-grid,
-          .main-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .content {
-            padding: 20px !important;
-          }
-
-          .toolbar {
-            flex-direction: column;
-            align-items: stretch !important;
-          }
-
-          .toolbar input,
-          .toolbar select {
-            width: 100% !important;
-          }
-
-          .actions {
-            justify-content: flex-start;
-          }
-        }
-      `}</style>
-
-      <header className="header" style={headerStyle}>
+    <main style={appStyle}>
+      <aside style={sidebarStyle}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 32 }}>ApoioRede</h1>
-          <p style={{ margin: "6px 0 0", color: "#cbd5e1" }}>CRM operacional odontológico</p>
+          <h1 style={sidebarLogo}>ApoioRede</h1>
+          <p style={sidebarSub}>CRM odontológico</p>
         </div>
 
-        <div>
-          <span style={{ marginRight: 16 }}>Olá, {user.name}</span>
-          <button onClick={logout} style={{ padding: "10px 16px", borderRadius: 8, border: 0, cursor: "pointer" }}>
-            Sair
-          </button>
+        <nav style={navStyle}>
+          <span style={navActive}>📊 Dashboard</span>
+          <span style={navItem}>📝 Solicitações</span>
+          <span style={navItem}>🏥 Clínicas</span>
+          <span style={navItem}>⚙️ Configurações</span>
+        </nav>
+
+        <button onClick={logout} style={logoutButton}>Sair</button>
+      </aside>
+
+      <section style={mainStyle}>
+        <header style={topbarStyle}>
+          <div>
+            <h2 style={{ margin: 0 }}>Dashboard</h2>
+            <p style={{ margin: "6px 0 0", color: "#64748b" }}>Bem-vinda, {user.name}</p>
+          </div>
+
+          <div style={avatarStyle}>{user.name?.charAt(0)}</div>
+        </header>
+
+        <div style={metricsStyle}>
+          <div style={metricCard}>
+            <span>Total de solicitações</span>
+            <strong>{requests.length}</strong>
+          </div>
+
+          <div style={metricCard}>
+            <span>Pendentes</span>
+            <strong style={{ color: "#d97706" }}>
+              {requests.filter((r) => r.status === "PENDENTE").length}
+            </strong>
+          </div>
+
+          <div style={metricCard}>
+            <span>Aprovadas</span>
+            <strong style={{ color: "#16a34a" }}>
+              {requests.filter((r) => r.status === "APROVADO").length}
+            </strong>
+          </div>
+
+          <div style={metricCard}>
+            <span>Clínicas</span>
+            <strong style={{ color: "#2563eb" }}>{clinics.length}</strong>
+          </div>
         </div>
-      </header>
 
-      <section className="content" style={{ padding: 40 }}>
-        <div className="dashboard-grid" style={dashboardGridStyle}>
-          <div style={cardStyle}>
-            <strong>Total de solicitações</strong>
-            <p style={numberStyle}>{requests.length}</p>
-          </div>
-
-          <div style={cardStyle}>
-            <strong>Pendentes</strong>
-            <p style={{ ...numberStyle, color: "#ca8a04" }}>{requests.filter((r) => r.status === "PENDENTE").length}</p>
-          </div>
-
-          <div style={cardStyle}>
-            <strong>Clínicas cadastradas</strong>
-            <p style={{ ...numberStyle, color: "#2563eb" }}>{clinics.length}</p>
-          </div>
-        </div>
-
-        <div className="main-grid" style={mainGridStyle}>
-          <section style={cardStyle}>
-            <h2>Nova solicitação</h2>
+        <div style={gridStyle}>
+          <section style={panelStyle}>
+            <h3>Nova solicitação</h3>
 
             <input placeholder="Nome do paciente" value={patientName} onChange={(e) => setPatientName(e.target.value)} style={inputStyle} />
             <input placeholder="Procedimento" value={procedure} onChange={(e) => setProcedure(e.target.value)} style={inputStyle} />
@@ -263,36 +253,27 @@ export default function Home() {
 
             <textarea placeholder="Observação" value={observation} onChange={(e) => setObservation(e.target.value)} style={{ ...inputStyle, minHeight: 90 }} />
 
-            <button onClick={createRequest} style={buttonStyle}>Cadastrar solicitação</button>
+            <button onClick={createRequest} style={primaryButton}>Cadastrar solicitação</button>
           </section>
 
-          <section style={cardStyle}>
-            <h2>Nova clínica</h2>
+          <section style={panelStyle}>
+            <h3>Nova clínica</h3>
 
             <input placeholder="Nome da clínica" value={clinicName} onChange={(e) => setClinicName(e.target.value)} style={inputStyle} />
             <input placeholder="Cidade" value={clinicCity} onChange={(e) => setClinicCity(e.target.value)} style={inputStyle} />
             <input placeholder="Estado" value={clinicState} onChange={(e) => setClinicState(e.target.value)} style={inputStyle} />
             <input placeholder="WhatsApp" value={clinicWhatsapp} onChange={(e) => setClinicWhatsapp(e.target.value)} style={inputStyle} />
 
-            <button onClick={createClinic} style={buttonStyle}>Cadastrar clínica</button>
-
-            <h3>Clínicas cadastradas</h3>
-            {clinics.map((clinic) => (
-              <p key={clinic.id}>
-                <strong>{clinic.name}</strong><br />
-                {clinic.city}/{clinic.state}<br />
-                WhatsApp: {clinic.whatsapp}
-              </p>
-            ))}
+            <button onClick={createClinic} style={primaryButton}>Cadastrar clínica</button>
           </section>
 
-          <section style={cardStyle}>
-            <div className="toolbar" style={toolbarStyle}>
-              <h2>Solicitações</h2>
+          <section style={requestsPanel}>
+            <div style={toolbarStyle}>
+              <h3 style={{ margin: 0 }}>Solicitações</h3>
 
-              <input placeholder="Buscar paciente..." value={search} onChange={(e) => setSearch(e.target.value)} style={smallInputStyle} />
+              <input placeholder="Buscar paciente..." value={search} onChange={(e) => setSearch(e.target.value)} style={smallInput} />
 
-              <select value={filter} onChange={(e) => setFilter(e.target.value)} style={smallInputStyle}>
+              <select value={filter} onChange={(e) => setFilter(e.target.value)} style={smallInput}>
                 <option value="TODOS">Todos</option>
                 <option value="PENDENTE">Pendentes</option>
                 <option value="APROVADO">Aprovados</option>
@@ -300,32 +281,28 @@ export default function Home() {
               </select>
             </div>
 
-            {filteredRequests.length === 0 ? (
-              <p>Nenhuma solicitação encontrada.</p>
-            ) : (
-              <div style={{ display: "grid", gap: 16 }}>
-                {filteredRequests.map((item) => (
-                  <div key={item.id} style={requestCardStyle}>
-                    <strong style={{ fontSize: 18 }}>{item.patientName}</strong>
-
-                    <p><strong>Procedimento:</strong> {item.procedure}</p>
-                    <p><strong>Cidade:</strong> {item.city || "Não informada"}</p>
-                    <p><strong>Observação:</strong> {item.observation || "Sem observação"}</p>
-                    <p><strong>Clínica:</strong> {item.clinic ? `${item.clinic.name} - ${item.clinic.city}/${item.clinic.state}` : "Não vinculada"}</p>
-
-                    <div className="actions" style={actionStyle}>
-                      <button onClick={() => updateStatus(item.id, "PENDENTE")} style={pendingButton}>Pendente</button>
-                      <button onClick={() => updateStatus(item.id, "APROVADO")} style={approveButton}>Aprovar</button>
-                      <button onClick={() => updateStatus(item.id, "NEGADO")} style={denyButton}>Negar</button>
-                      <button onClick={() => deleteRequest(item.id)} style={deleteButton}>Excluir</button>
-                    </div>
-
-                    <br />
+            <div style={{ display: "grid", gap: 14 }}>
+              {filteredRequests.map((item) => (
+                <div key={item.id} style={requestCard}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <strong>{item.patientName}</strong>
                     <span style={statusStyle(item.status)}>{item.status}</span>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  <p><strong>Procedimento:</strong> {item.procedure}</p>
+                  <p><strong>Cidade:</strong> {item.city || "Não informada"}</p>
+                  <p><strong>Observação:</strong> {item.observation || "Sem observação"}</p>
+                  <p><strong>Clínica:</strong> {item.clinic ? `${item.clinic.name} - ${item.clinic.city}/${item.clinic.state}` : "Não vinculada"}</p>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => updateStatus(item.id, "PENDENTE")} style={yellowBtn}>Pendente</button>
+                    <button onClick={() => updateStatus(item.id, "APROVADO")} style={greenBtn}>Aprovar</button>
+                    <button onClick={() => updateStatus(item.id, "NEGADO")} style={redBtn}>Negar</button>
+                    <button onClick={() => deleteRequest(item.id)} style={darkBtn}>Excluir</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       </section>
@@ -333,103 +310,35 @@ export default function Home() {
   );
 }
 
-const loginPageStyle = {
-  minHeight: "100vh",
-  background: "#eef2f7",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontFamily: "Arial",
-  padding: 20,
-};
-
-const loginCardStyle = {
-  width: "100%",
-  maxWidth: 400,
-  background: "white",
-  padding: 32,
-  borderRadius: 20,
-};
-
-const headerStyle = {
-  background: "#0f172a",
-  color: "white",
-  padding: "24px 40px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
-
-const dashboardGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr",
-  gap: 20,
-  marginBottom: 30,
-};
-
-const mainGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "360px 360px 1fr",
-  gap: 24,
-};
-
-const cardStyle = {
-  background: "white",
-  padding: 24,
-  borderRadius: 16,
-};
-
-const requestCardStyle = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 14,
-  padding: 18,
-};
-
-const toolbarStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  marginBottom: 20,
-  alignItems: "center",
-};
-
-const numberStyle = { fontSize: 32, margin: "12px 0 0" };
-
-const inputStyle = {
-  width: "100%",
-  padding: 12,
-  marginBottom: 12,
-  border: "1px solid #d1d5db",
-  borderRadius: 10,
-  fontSize: 14,
-};
-
-const smallInputStyle = {
-  padding: 10,
-  borderRadius: 8,
-  border: "1px solid #d1d5db",
-  width: 200,
-};
-
-const buttonStyle = {
-  width: "100%",
-  padding: 14,
-  background: "#2563eb",
-  color: "white",
-  border: 0,
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const activeTab = { flex: 1, padding: 12, borderRadius: 10, border: 0, background: "#2563eb", color: "white", fontWeight: "bold", cursor: "pointer" };
-const inactiveTab = { flex: 1, padding: 12, borderRadius: 10, border: 0, background: "#e5e7eb", color: "#111827", fontWeight: "bold", cursor: "pointer" };
-
-const actionStyle = { display: "flex", gap: 8, flexWrap: "wrap" as const };
-const pendingButton = { background: "#fef3c7", color: "#92400e", border: 0, padding: "6px 10px", borderRadius: 999, cursor: "pointer" };
-const approveButton = { background: "#dcfce7", color: "#166534", border: 0, padding: "6px 10px", borderRadius: 999, cursor: "pointer" };
-const denyButton = { background: "#fee2e2", color: "#991b1b", border: 0, padding: "6px 10px", borderRadius: 999, cursor: "pointer" };
-const deleteButton = { background: "#111827", color: "white", border: 0, padding: "6px 10px", borderRadius: 999, cursor: "pointer" };
+const appStyle = { minHeight: "100vh", display: "flex", background: "#f1f5f9", fontFamily: "Arial", color: "#0f172a" };
+const sidebarStyle = { width: 250, background: "#0f172a", color: "white", padding: 28, display: "flex", flexDirection: "column" as const, justifyContent: "space-between" };
+const sidebarLogo = { margin: 0, fontSize: 28 };
+const sidebarSub = { color: "#94a3b8", marginTop: 6 };
+const navStyle = { display: "grid", gap: 12, marginTop: 40 };
+const navActive = { background: "#2563eb", padding: 12, borderRadius: 12, fontWeight: "bold" };
+const navItem = { padding: 12, color: "#cbd5e1" };
+const logoutButton = { background: "white", color: "#0f172a", border: 0, padding: 12, borderRadius: 12, fontWeight: "bold", cursor: "pointer" };
+const mainStyle = { flex: 1, padding: 32, overflowX: "auto" as const };
+const topbarStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 };
+const avatarStyle = { width: 46, height: 46, borderRadius: 999, background: "#2563eb", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" };
+const metricsStyle = { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18, marginBottom: 24 };
+const metricCard = { background: "white", padding: 22, borderRadius: 18, boxShadow: "0 8px 24px rgba(15,23,42,.06)", display: "grid", gap: 14 };
+const gridStyle = { display: "grid", gridTemplateColumns: "340px 340px 1fr", gap: 20 };
+const panelStyle = { background: "white", padding: 22, borderRadius: 18, boxShadow: "0 8px 24px rgba(15,23,42,.06)" };
+const requestsPanel = { ...panelStyle, minWidth: 430 };
+const toolbarStyle = { display: "flex", gap: 10, alignItems: "center", marginBottom: 18 };
+const inputStyle = { width: "100%", padding: 13, border: "1px solid #cbd5e1", borderRadius: 12, marginBottom: 12, boxSizing: "border-box" as const };
+const smallInput = { padding: 11, border: "1px solid #cbd5e1", borderRadius: 10 };
+const primaryButton = { width: "100%", padding: 14, border: 0, borderRadius: 12, background: "#2563eb", color: "white", fontWeight: "bold", cursor: "pointer" };
+const requestCard = { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16 };
+const loginPageStyle = { minHeight: "100vh", background: "#eef2f7", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "Arial", padding: 20 };
+const loginCardStyle = { width: "100%", maxWidth: 420, background: "white", padding: 34, borderRadius: 24, boxShadow: "0 20px 50px rgba(15, 23, 42, 0.12)" };
+const activeTab = { flex: 1, padding: 13, borderRadius: 12, border: 0, background: "#2563eb", color: "white", fontWeight: "bold", cursor: "pointer" };
+const inactiveTab = { flex: 1, padding: 13, borderRadius: 12, border: 0, background: "#e5e7eb", color: "#111827", fontWeight: "bold", cursor: "pointer" };
+const yellowBtn = { background: "#fef3c7", color: "#92400e", border: 0, padding: "7px 12px", borderRadius: 999, cursor: "pointer" };
+const greenBtn = { background: "#dcfce7", color: "#166534", border: 0, padding: "7px 12px", borderRadius: 999, cursor: "pointer" };
+const redBtn = { background: "#fee2e2", color: "#991b1b", border: 0, padding: "7px 12px", borderRadius: 999, cursor: "pointer" };
+const darkBtn = { background: "#111827", color: "white", border: 0, padding: "7px 12px", borderRadius: 999, cursor: "pointer" };
 
 function statusStyle(status: string) {
   return {
@@ -438,5 +347,7 @@ function statusStyle(status: string) {
     padding: "6px 12px",
     borderRadius: 999,
     fontWeight: "bold",
+    fontSize: 13,
+    whiteSpace: "nowrap" as const,
   };
 }
