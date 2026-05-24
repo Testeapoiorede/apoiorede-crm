@@ -1,653 +1,392 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
-const API_URL = "https://apoiorede-crm.onrender.com";
+type RequestStatus = "PENDENTE" | "APROVADA" | "NEGADA";
 
-function getAuthHeaders() {
-  const token = localStorage.getItem("apoiorede_token");
+type RequestItem = {
+  id: number;
+  patient: string;
+  procedure: string;
+  city: string;
+  clinic: string;
+  status: RequestStatus;
+};
 
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
+type Clinic = {
+  id: number;
+  name: string;
+  city: string;
+  phone: string;
+};
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null);
   const [isLogin, setIsLogin] = useState(true);
-  const [activePage, setActivePage] =
-    useState("DASHBOARD");
-
-  const [toast, setToast] = useState("");
-  const [message, setMessage] = useState("");
+  const [user, setUser] = useState<any>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] =
-    useState("");
+  const [password, setPassword] = useState("");
 
-  const [requests, setRequests] = useState<
-    any[]
-  >([]);
+  const [activePage, setActivePage] = useState("DASHBOARD");
 
-  const [clinics, setClinics] = useState<
-    any[]
-  >([]);
+  const [requests, setRequests] = useState<RequestItem[]>([
+    {
+      id: 1,
+      patient: "Daniela Moraes",
+      procedure: "Ortodontia",
+      city: "Sorocaba-SP",
+      clinic: "Clínica Sorriso",
+      status: "PENDENTE",
+    },
+  ]);
 
-  const [filter, setFilter] =
-    useState("TODOS");
+  const [clinics, setClinics] = useState<Clinic[]>([
+    {
+      id: 1,
+      name: "Clínica Sorriso",
+      city: "São Paulo/SP",
+      phone: "(11) 99999-9999",
+    },
+  ]);
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("TODOS");
 
-  const [showRequestModal, setShowRequestModal] =
-    useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showClinicModal, setShowClinicModal] = useState(false);
 
-  const [showClinicModal, setShowClinicModal] =
-    useState(false);
+  const [newPatient, setNewPatient] = useState("");
+  const [newProcedure, setNewProcedure] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newClinic, setNewClinic] = useState("");
 
-  const [patientName, setPatientName] =
-    useState("");
+  const [clinicName, setClinicName] = useState("");
+  const [clinicCity, setClinicCity] = useState("");
+  const [clinicPhone, setClinicPhone] = useState("");
 
-  const [procedure, setProcedure] =
-    useState("");
+  function handleAuth() {
+    if (!email || !password) return;
 
-  const [city, setCity] = useState("");
-
-  const [observation, setObservation] =
-    useState("");
-
-  const [clinicId, setClinicId] =
-    useState("");
-
-  const [clinicName, setClinicName] =
-    useState("");
-
-  const [clinicCity, setClinicCity] =
-    useState("");
-
-  const [clinicState, setClinicState] =
-    useState("");
-
-  const [clinicWhatsapp, setClinicWhatsapp] =
-    useState("");
-
-  function showToast(text: string) {
-    setToast(text);
-
-    setTimeout(() => {
-      setToast("");
-    }, 3000);
-  }
-
-  useEffect(() => {
-    const savedUser =
-      localStorage.getItem("apoiorede_user");
-
-    const savedToken =
-      localStorage.getItem("apoiorede_token");
-
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      loadData();
-    }
-  }, []);
-
-  async function register() {
-    const response = await fetch(
-      `${API_URL}/auth/register`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      localStorage.setItem(
-        "apoiorede_user",
-        JSON.stringify(data.user)
-      );
-
-      localStorage.setItem(
-        "apoiorede_token",
-        data.token
-      );
-
-      setUser(data.user);
-
-      loadData();
-
-      showToast(
-        "Cadastro realizado com sucesso."
-      );
-    } else {
-      setMessage(
-        data.error || "Erro ao cadastrar"
-      );
-    }
-  }
-
-  async function login() {
-    const response = await fetch(
-      `${API_URL}/auth/login`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      localStorage.setItem(
-        "apoiorede_user",
-        JSON.stringify(data.user)
-      );
-
-      localStorage.setItem(
-        "apoiorede_token",
-        data.token
-      );
-
-      setUser(data.user);
-
-      loadData();
-
-      showToast(
-        "Login realizado com sucesso."
-      );
-    } else {
-      setMessage(
-        data.error || "Erro no login"
-      );
-    }
-  }
-
-  function logout() {
-    localStorage.removeItem(
-      "apoiorede_user"
-    );
-
-    localStorage.removeItem(
-      "apoiorede_token"
-    );
-
-    setUser(null);
-  }
-
-  async function loadData() {
-    const requestsResponse = await fetch(
-      `${API_URL}/requests`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    const requestsData =
-      await requestsResponse.json();
-
-    setRequests(
-      Array.isArray(requestsData)
-        ? requestsData
-        : []
-    );
-
-    const clinicsResponse = await fetch(
-      `${API_URL}/clinics`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    const clinicsData =
-      await clinicsResponse.json();
-
-    setClinics(
-      Array.isArray(clinicsData)
-        ? clinicsData
-        : []
-    );
-  }
-
-  async function createRequest() {
-    await fetch(`${API_URL}/requests`, {
-      method: "POST",
-
-      headers: getAuthHeaders(),
-
-      body: JSON.stringify({
-        patientName,
-        procedure,
-        city,
-        observation,
-        clinicId: clinicId || null,
-      }),
+    setUser({
+      name: name || "Daniela Moraes",
+      email,
+      role: "OPERADOR",
     });
+  }
 
-    setPatientName("");
-    setProcedure("");
-    setCity("");
-    setObservation("");
-    setClinicId("");
+  function createRequest() {
+    if (!newPatient || !newProcedure) return;
+
+    setRequests((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        patient: newPatient,
+        procedure: newProcedure,
+        city: newCity,
+        clinic: newClinic,
+        status: "PENDENTE",
+      },
+    ]);
+
+    setNewPatient("");
+    setNewProcedure("");
+    setNewCity("");
+    setNewClinic("");
 
     setShowRequestModal(false);
-
-    loadData();
-
-    showToast("Solicitação criada.");
   }
 
-  async function createClinic() {
-    const response = await fetch(
-      `${API_URL}/clinics`,
+  function createClinic() {
+    if (!clinicName) return;
+
+    setClinics((prev) => [
+      ...prev,
       {
-        method: "POST",
-
-        headers: getAuthHeaders(),
-
-        body: JSON.stringify({
-          name: clinicName,
-          city: clinicCity,
-          state: clinicState,
-          whatsapp: clinicWhatsapp,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      showToast(
-        "Apenas ADMIN pode cadastrar clínicas."
-      );
-
-      return;
-    }
+        id: Date.now(),
+        name: clinicName,
+        city: clinicCity,
+        phone: clinicPhone,
+      },
+    ]);
 
     setClinicName("");
     setClinicCity("");
-    setClinicState("");
-    setClinicWhatsapp("");
+    setClinicPhone("");
 
     setShowClinicModal(false);
-
-    loadData();
-
-    showToast("Clínica criada.");
   }
 
-  async function updateStatus(
-    id: string,
-    status: string
-  ) {
-    await fetch(
-      `${API_URL}/requests/${id}/status`,
-      {
-        method: "PUT",
-
-        headers: getAuthHeaders(),
-
-        body: JSON.stringify({
-          status,
-        }),
-      }
+  function updateStatus(id: number, status: RequestStatus) {
+    setRequests((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, status } : item
+      )
     );
-
-    loadData();
-
-    showToast("Status atualizado.");
   }
+
+  function deleteRequest(id: number) {
+    setRequests((prev) => prev.filter((item) => item.id !== id));
+  }
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((item) => {
+      const matchSearch = item.patient
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const matchFilter =
+        filter === "TODOS" || item.status === filter;
+
+      return matchSearch && matchFilter;
+    });
+  }, [requests, search, filter]);
 
   const total = requests.length;
-
-  const pendentes = requests.filter(
+  const pending = requests.filter(
     (r) => r.status === "PENDENTE"
   ).length;
 
-  const aprovadas = requests.filter(
-    (r) => r.status === "APROVADO"
+  const approved = requests.filter(
+    (r) => r.status === "APROVADA"
   ).length;
 
-  const negadas = requests.filter(
-    (r) => r.status === "NEGADO"
+  const denied = requests.filter(
+    (r) => r.status === "NEGADA"
   ).length;
-
-  const filteredRequests =
-    requests.filter((r) => {
-      const matchStatus =
-        filter === "TODOS" ||
-        r.status === filter;
-
-      const matchSearch =
-        r.patientName
-          .toLowerCase()
-          .includes(search.toLowerCase());
-
-      return (
-        matchStatus && matchSearch
-      );
-    });
 
   if (!user) {
     return (
-      <main style={loginPageStyle}>
-        <section style={loginCardStyle}>
-          <h1>ApoioRede</h1>
+      <main style={loginPage}>
+        <div style={loginCard}>
+          <h1 style={{ fontSize: 34 }}>ApoioRede</h1>
 
-          <p>CRM odontológico</p>
+          <p style={{ color: "#666" }}>
+            CRM odontológico
+          </p>
 
           {!isLogin && (
             <input
+              style={input}
               placeholder="Nome"
               value={name}
               onChange={(e) =>
-                setName(
-                  e.target.value
-                )
+                setName(e.target.value)
               }
-              style={inputStyle}
             />
           )}
 
           <input
-            placeholder="E-mail"
+            style={input}
+            placeholder="Email"
             value={email}
             onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
+              setEmail(e.target.value)
             }
-            style={inputStyle}
           />
 
           <input
+            style={input}
             type="password"
             placeholder="Senha"
             value={password}
             onChange={(e) =>
-              setPassword(
-                e.target.value
-              )
+              setPassword(e.target.value)
             }
-            style={inputStyle}
           />
 
           <button
-            onClick={
-              isLogin
-                ? login
-                : register
-            }
             style={primaryButton}
+            onClick={handleAuth}
+          >
+            {isLogin ? "Entrar" : "Cadastrar"}
+          </button>
+
+          <button
+            style={linkButton}
+            onClick={() =>
+              setIsLogin(!isLogin)
+            }
           >
             {isLogin
-              ? "Entrar"
-              : "Cadastrar"}
+              ? "Criar conta"
+              : "Já tenho conta"}
           </button>
-        </section>
+        </div>
       </main>
     );
   }
 
   return (
-    <main style={appStyle}>
-      <aside style={sidebarStyle}>
+    <main style={layout}>
+      <aside style={sidebar}>
         <div>
-          <h1 style={sidebarLogo}>
+          <h1 style={{ fontSize: 38 }}>
             ApoioRede
           </h1>
 
-          <p style={sidebarSub}>
+          <p style={{ opacity: 0.7 }}>
             CRM odontológico
           </p>
 
-          <nav style={navStyle}>
+          <div style={nav}>
             <button
+              style={navButton(
+                activePage === "DASHBOARD"
+              )}
               onClick={() =>
-                setActivePage(
-                  "DASHBOARD"
-                )
-              }
-              style={
-                activePage ===
-                "DASHBOARD"
-                  ? navActive
-                  : navButton
+                setActivePage("DASHBOARD")
               }
             >
               📊 Dashboard
             </button>
 
             <button
+              style={navButton(
+                activePage === "SOLICITACOES"
+              )}
               onClick={() =>
-                setActivePage(
-                  "SOLICITACOES"
-                )
-              }
-              style={
-                activePage ===
-                "SOLICITACOES"
-                  ? navActive
-                  : navButton
+                setActivePage("SOLICITACOES")
               }
             >
-              📝 Solicitações
+              📄 Solicitações
             </button>
 
             <button
+              style={navButton(
+                activePage === "CLINICAS"
+              )}
               onClick={() =>
-                setActivePage(
-                  "CLINICAS"
-                )
-              }
-              style={
-                activePage ===
-                "CLINICAS"
-                  ? navActive
-                  : navButton
+                setActivePage("CLINICAS")
               }
             >
               🏥 Clínicas
             </button>
 
             <button
+              style={navButton(
+                activePage === "METRICAS"
+              )}
               onClick={() =>
-                setActivePage(
-                  "METRICAS"
-                )
-              }
-              style={
-                activePage ===
-                "METRICAS"
-                  ? navActive
-                  : navButton
+                setActivePage("METRICAS")
               }
             >
               📈 Métricas
             </button>
-          </nav>
+          </div>
         </div>
 
         <button
-          onClick={logout}
           style={logoutButton}
+          onClick={() => setUser(null)}
         >
           Sair
         </button>
       </aside>
 
-      <section style={mainStyle}>
-        <header style={topbarStyle}>
+      <section style={content}>
+        <div style={topbar}>
           <div>
             <h2>Dashboard</h2>
 
             <p>
-              Bem-vinda, {user.name}
+              Bem-vinda, {user.name} —
+              {user.role}
             </p>
           </div>
 
-          <button
-            onClick={() =>
-              setShowRequestModal(true)
-            }
-            style={primarySmallButton}
-          >
-            + Solicitação
-          </button>
-        </header>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              style={primaryButton}
+              onClick={() =>
+                setShowRequestModal(true)
+              }
+            >
+              + Solicitação
+            </button>
 
-        {activePage ===
-          "DASHBOARD" && (
+            <button
+              style={avatar}
+            >
+              {user.name[0]}
+            </button>
+          </div>
+        </div>
+
+        {(activePage === "DASHBOARD" ||
+          activePage === "SOLICITACOES") && (
           <>
-            <div style={metricsStyle}>
-              <div style={metricCard}>
-                <span>Total</span>
+            <div style={cardsGrid}>
+              <Card
+                title="Total"
+                value={total}
+              />
 
-                <strong
-                  style={{
-                    fontSize: 28,
-                  }}
-                >
-                  {total}
-                </strong>
-              </div>
+              <Card
+                title="Pendentes"
+                value={pending}
+                color="#cc6b49"
+              />
 
-              <div style={metricCard}>
-                <span>
-                  Pendentes
-                </span>
+              <Card
+                title="Aprovadas"
+                value={approved}
+                color="#2e8b57"
+              />
 
-                <strong
-                  style={{
-                    color:
-                      "#d97706",
-
-                    fontSize: 28,
-                  }}
-                >
-                  {pendentes}
-                </strong>
-              </div>
-
-              <div style={metricCard}>
-                <span>
-                  Aprovadas
-                </span>
-
-                <strong
-                  style={{
-                    color:
-                      "#16a34a",
-
-                    fontSize: 28,
-                  }}
-                >
-                  {aprovadas}
-                </strong>
-              </div>
-
-              <div style={metricCard}>
-                <span>
-                  Negadas
-                </span>
-
-                <strong
-                  style={{
-                    color:
-                      "#dc2626",
-
-                    fontSize: 28,
-                  }}
-                >
-                  {negadas}
-                </strong>
-              </div>
+              <Card
+                title="Negadas"
+                value={denied}
+                color="#b03052"
+              />
             </div>
 
-            <section style={panelStyle}>
-              <div
-                style={toolbarStyle}
-              >
+            <div style={panel}>
+              <div style={toolbar}>
                 <input
+                  style={input}
                   placeholder="Buscar paciente..."
                   value={search}
                   onChange={(e) =>
-                    setSearch(
-                      e.target.value
-                    )
+                    setSearch(e.target.value)
                   }
-                  style={smallInput}
                 />
 
                 <select
+                  style={input}
                   value={filter}
                   onChange={(e) =>
-                    setFilter(
-                      e.target.value
-                    )
+                    setFilter(e.target.value)
                   }
-                  style={smallInput}
                 >
                   <option value="TODOS">
                     Todos
                   </option>
 
                   <option value="PENDENTE">
-                    Pendentes
+                    Pendente
                   </option>
 
-                  <option value="APROVADO">
-                    Aprovados
+                  <option value="APROVADA">
+                    Aprovada
                   </option>
 
-                  <option value="NEGADO">
-                    Negados
+                  <option value="NEGADA">
+                    Negada
                   </option>
                 </select>
               </div>
 
-              <table style={tableStyle}>
+              <table style={table}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>
-                      Paciente
-                    </th>
-
-                    <th style={thStyle}>
-                      Procedimento
-                    </th>
-
-                    <th style={thStyle}>
-                      Cidade
-                    </th>
-
-                    <th style={thStyle}>
-                      Clínica
-                    </th>
-
-                    <th style={thStyle}>
-                      Status
-                    </th>
+                    <th style={th}>Paciente</th>
+                    <th style={th}>Procedimento</th>
+                    <th style={th}>Cidade</th>
+                    <th style={th}>Clínica</th>
+                    <th style={th}>Status</th>
+                    <th style={th}>Ações</th>
                   </tr>
                 </thead>
 
@@ -655,228 +394,573 @@ export default function Home() {
                   {filteredRequests.map(
                     (item) => (
                       <tr key={item.id}>
-                        <td style={tdStyle}>
-                          {
-                            item.patientName
-                          }
+                        <td style={td}>
+                          {item.patient}
                         </td>
 
-                        <td style={tdStyle}>
-                          {
-                            item.procedure
-                          }
+                        <td style={td}>
+                          {item.procedure}
                         </td>
 
-                        <td style={tdStyle}>
+                        <td style={td}>
                           {item.city}
                         </td>
 
-                        <td style={tdStyle}>
-                          {item.clinic
-                            ?.name ||
-                            "-"}
+                        <td style={td}>
+                          {item.clinic}
                         </td>
 
-                        <td style={tdStyle}>
+                        <td style={td}>
                           <span
                             style={statusStyle(
                               item.status
                             )}
                           >
-                            {
-                              item.status
-                            }
+                            {item.status}
                           </span>
+                        </td>
+
+                        <td style={td}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <button
+                              style={
+                                approveButton
+                              }
+                              onClick={() =>
+                                updateStatus(
+                                  item.id,
+                                  "APROVADA"
+                                )
+                              }
+                            >
+                              Aprovar
+                            </button>
+
+                            <button
+                              style={
+                                denyButton
+                              }
+                              onClick={() =>
+                                updateStatus(
+                                  item.id,
+                                  "NEGADA"
+                                )
+                              }
+                            >
+                              Negar
+                            </button>
+
+                            <button
+                              style={
+                                deleteButton
+                              }
+                              onClick={() =>
+                                deleteRequest(
+                                  item.id
+                                )
+                              }
+                            >
+                              Excluir
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
                   )}
                 </tbody>
               </table>
-            </section>
+            </div>
           </>
         )}
+
+        {activePage === "CLINICAS" && (
+          <div style={panel}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent:
+                  "space-between",
+                marginBottom: 24,
+              }}
+            >
+              <h2>Clínicas</h2>
+
+              <button
+                style={primaryButton}
+                onClick={() =>
+                  setShowClinicModal(true)
+                }
+              >
+                + Clínica
+              </button>
+            </div>
+
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>Nome</th>
+                  <th style={th}>Cidade</th>
+                  <th style={th}>Telefone</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {clinics.map((clinic) => (
+                  <tr key={clinic.id}>
+                    <td style={td}>
+                      {clinic.name}
+                    </td>
+
+                    <td style={td}>
+                      {clinic.city}
+                    </td>
+
+                    <td style={td}>
+                      {clinic.phone}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activePage === "METRICAS" && (
+          <div style={cardsGrid}>
+            <Card
+              title="Total Solicitações"
+              value={total}
+            />
+
+            <Card
+              title="Taxa Aprovação"
+              value={`${Math.round(
+                (approved /
+                  (total || 1)) *
+                  100
+              )}%`}
+              color="#2e8b57"
+            />
+
+            <Card
+              title="Taxa Negativa"
+              value={`${Math.round(
+                (denied /
+                  (total || 1)) *
+                  100
+              )}%`}
+              color="#b03052"
+            />
+
+            <Card
+              title="Clínicas"
+              value={clinics.length}
+            />
+          </div>
+        )}
       </section>
+
+      {showRequestModal && (
+        <div style={modalOverlay}>
+          <div style={modal}>
+            <h2>Nova Solicitação</h2>
+
+            <input
+              style={input}
+              placeholder="Paciente"
+              value={newPatient}
+              onChange={(e) =>
+                setNewPatient(
+                  e.target.value
+                )
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Procedimento"
+              value={newProcedure}
+              onChange={(e) =>
+                setNewProcedure(
+                  e.target.value
+                )
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Cidade"
+              value={newCity}
+              onChange={(e) =>
+                setNewCity(e.target.value)
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Clínica"
+              value={newClinic}
+              onChange={(e) =>
+                setNewClinic(
+                  e.target.value
+                )
+              }
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+              }}
+            >
+              <button
+                style={primaryButton}
+                onClick={createRequest}
+              >
+                Salvar
+              </button>
+
+              <button
+                style={secondaryButton}
+                onClick={() =>
+                  setShowRequestModal(
+                    false
+                  )
+                }
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showClinicModal && (
+        <div style={modalOverlay}>
+          <div style={modal}>
+            <h2>Nova Clínica</h2>
+
+            <input
+              style={input}
+              placeholder="Nome"
+              value={clinicName}
+              onChange={(e) =>
+                setClinicName(
+                  e.target.value
+                )
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Cidade"
+              value={clinicCity}
+              onChange={(e) =>
+                setClinicCity(
+                  e.target.value
+                )
+              }
+            />
+
+            <input
+              style={input}
+              placeholder="Telefone"
+              value={clinicPhone}
+              onChange={(e) =>
+                setClinicPhone(
+                  e.target.value
+                )
+              }
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+              }}
+            >
+              <button
+                style={primaryButton}
+                onClick={createClinic}
+              >
+                Salvar
+              </button>
+
+              <button
+                style={secondaryButton}
+                onClick={() =>
+                  setShowClinicModal(
+                    false
+                  )
+                }
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-const appStyle = {
-  minHeight: "100vh",
+function Card({
+  title,
+  value,
+  color = "#111",
+}: any) {
+  return (
+    <div style={card}>
+      <p>{title}</p>
+
+      <h1 style={{ color }}>
+        {value}
+      </h1>
+    </div>
+  );
+}
+
+const layout = {
   display: "flex",
-  background: "#f1f5f9",
-  fontFamily: "Arial",
+  minHeight: "100vh",
+  background: "#eef3ff",
 };
 
-const sidebarStyle = {
-  width: 250,
-  background: "#0f172a",
+const sidebar = {
+  width: 300,
+  background:
+    "linear-gradient(180deg,#16192f,#1d2452)",
   color: "white",
-  padding: 28,
+  padding: 32,
+  display: "flex",
+  flexDirection: "column" as const,
+  justifyContent: "space-between",
 };
 
-const sidebarLogo = {
-  fontSize: 28,
-};
-
-const sidebarSub = {
-  color: "#94a3b8",
-};
-
-const navStyle = {
-  display: "grid",
-  gap: 12,
+const nav = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 14,
   marginTop: 40,
 };
 
-const navActive = {
-  background: "#2563eb",
-  padding: 12,
-  borderRadius: 12,
-  border: 0,
-  color: "white",
-  cursor: "pointer",
-  textAlign: "left" as const,
+const content = {
+  flex: 1,
+  padding: 40,
 };
 
-const navButton = {
-  padding: 12,
-  border: 0,
-  borderRadius: 12,
-  background: "transparent",
-  color: "white",
+const topbar = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 30,
+};
+
+const cardsGrid = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit,minmax(220px,1fr))",
+  gap: 20,
+  marginBottom: 30,
+};
+
+const card = {
+  background: "white",
+  borderRadius: 20,
+  padding: 28,
+};
+
+const panel = {
+  background: "white",
+  borderRadius: 20,
+  padding: 24,
+};
+
+const toolbar = {
+  display: "flex",
+  gap: 14,
+  marginBottom: 24,
+};
+
+const table = {
+  width: "100%",
+};
+
+const th = {
   textAlign: "left" as const,
+  padding: 14,
+};
+
+const td = {
+  padding: 14,
+};
+
+const input = {
+  width: "100%",
+  padding: 14,
+  borderRadius: 12,
+  border: "1px solid #ddd",
+};
+
+const primaryButton = {
+  background: "#4f46e5",
+  color: "white",
+  border: "none",
+  padding: "14px 18px",
+  borderRadius: 12,
+  cursor: "pointer",
+};
+
+const secondaryButton = {
+  background: "#e5e7eb",
+  color: "#111",
+  border: "none",
+  padding: "14px 18px",
+  borderRadius: 12,
+  cursor: "pointer",
+};
+
+const approveButton = {
+  background: "#d1fae5",
+  color: "#065f46",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 12,
+  cursor: "pointer",
+};
+
+const denyButton = {
+  background: "#ffe4e6",
+  color: "#be123c",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 12,
+  cursor: "pointer",
+};
+
+const deleteButton = {
+  background: "#111827",
+  color: "white",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 12,
   cursor: "pointer",
 };
 
 const logoutButton = {
-  marginTop: 40,
-  width: "100%",
-  padding: 12,
-};
-
-const mainStyle = {
-  flex: 1,
-  padding: 32,
-};
-
-const topbarStyle = {
-  display: "flex",
-  justifyContent:
-    "space-between",
-};
-
-const metricsStyle = {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit,minmax(220px,1fr))",
-  gap: 18,
-  marginBottom: 24,
-};
-
-const metricCard = {
-  background: "white",
-  padding: 24,
-  borderRadius: 18,
-
-  display: "flex",
-  flexDirection:
-    "column" as const,
-
-  gap: 12,
-};
-
-const panelStyle = {
-  background: "white",
-  padding: 24,
-  borderRadius: 18,
-};
-
-const toolbarStyle = {
-  display: "flex",
-  gap: 12,
-  marginBottom: 18,
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: 13,
-  borderRadius: 12,
-  marginBottom: 12,
-};
-
-const smallInput = {
-  padding: 10,
-  borderRadius: 10,
-};
-
-const primaryButton = {
-  width: "100%",
-  padding: 14,
-  borderRadius: 12,
-  background: "#2563eb",
+  background: "transparent",
+  border: "none",
   color: "white",
-  border: 0,
+  fontSize: 18,
+  cursor: "pointer",
 };
 
-const primarySmallButton = {
-  padding: "10px 14px",
-  borderRadius: 12,
-  background: "#2563eb",
+const avatar = {
+  width: 48,
+  height: 48,
+  borderRadius: "50%",
+  border: "none",
+  background: "#4f46e5",
   color: "white",
-  border: 0,
+  fontWeight: "bold",
 };
 
-const loginPageStyle = {
+const modalOverlay = {
+  position: "fixed" as const,
+  inset: 0,
+  background: "rgba(0,0,0,0.5)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const modal = {
+  background: "white",
+  padding: 30,
+  borderRadius: 20,
+  width: 420,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 14,
+};
+
+const loginPage = {
   minHeight: "100vh",
   display: "flex",
+  justifyContent: "center",
   alignItems: "center",
-  justifyContent:
-    "center",
+  background:
+    "linear-gradient(135deg,#4f46e5,#111827)",
 };
 
-const loginCardStyle = {
-  width: 400,
+const loginCard = {
   background: "white",
-  padding: 34,
-  borderRadius: 24,
+  width: 420,
+  borderRadius: 20,
+  padding: 40,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 14,
 };
 
-const tableStyle = {
-  width: "100%",
+const linkButton = {
+  background: "transparent",
+  border: "none",
+  color: "#4f46e5",
+  cursor: "pointer",
 };
 
-const thStyle = {
-  textAlign: "left" as const,
-  padding: 14,
-};
+function navButton(active: boolean) {
+  return {
+    background: active
+      ? "#4f46e5"
+      : "transparent",
 
-const tdStyle = {
-  padding: 14,
-};
+    color: "white",
+    border: "none",
+    padding: 18,
+    borderRadius: 16,
+    textAlign: "left" as const,
+    cursor: "pointer",
+    fontSize: 16,
+  };
+}
 
 function statusStyle(
-  status: string
+  status: RequestStatus
 ) {
+  const colors = {
+    PENDENTE: {
+      bg: "#fff1f2",
+      color: "#be123c",
+    },
+
+    APROVADA: {
+      bg: "#dcfce7",
+      color: "#166534",
+    },
+
+    NEGADA: {
+      bg: "#fee2e2",
+      color: "#991b1b",
+    },
+  };
+
   return {
     background:
-      status === "APROVADO"
-        ? "#dcfce7"
-        : status === "NEGADO"
-        ? "#fee2e2"
-        : "#fef3c7",
+      colors[status].bg,
 
     color:
-      status === "APROVADO"
-        ? "#166534"
-        : status === "NEGADO"
-        ? "#991b1b"
-        : "#92400e",
+      colors[status].color,
 
-    padding: "6px 12px",
-
+    padding: "8px 14px",
     borderRadius: 999,
-
     fontWeight: "bold",
   };
 }
