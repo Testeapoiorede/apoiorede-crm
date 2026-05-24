@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -14,28 +15,75 @@ model User {
   password  String
   role      String   @default("OPERADOR")
   createdAt DateTime @default(now())
+
+  requests  Request[]
+  histories History[]
 }
 
 model Clinic {
-  id        String   @id @default(cuid())
-  name      String
-  city      String
-  state     String
-  whatsapp  String
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  name           String
+  fantasyName    String?
+  whatsapp       String?
+  phone          String?
+  city           String
+  state          String
+  neighborhood   String?
+  address        String?
+  number         String?
+  complement     String?
+  specialty      String?
+  procedures     String?
+  acceptedPlans  String?
+  network        String?
+  source         String?
+  notes          String?
+  createdAt      DateTime @default(now())
 
   requests Request[]
 }
 
 model Request {
-  id          String   @id @default(cuid())
-  patientName String
-  procedure   String
-  city        String   @default("")
-  observation String   @default("")
-  status      String
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  clientName      String
+  clientWhatsapp  String?
+  plan            String
+  specialty       String
+  procedure       String?
+  city            String
+  state           String
+  neighborhood    String?
+  priority        String   @default("NORMAL")
+  observation     String?
+  status          String   @default("NOVA")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  clinicId String?
-  clinic   Clinic? @relation(fields: [clinicId], references: [id])
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+
+  clinicId        String?
+  clinic          Clinic?  @relation(fields: [clinicId], references: [id])
+
+  histories       History[]
+}
+
+model History {
+  id        String   @id @default(cuid())
+  action    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id])
+
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model ImportLog {
+  id        String   @id @default(cuid())
+  fileName  String
+  totalRows Int
+  createdAt DateTime @default(now())
 }

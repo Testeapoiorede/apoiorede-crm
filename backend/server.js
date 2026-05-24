@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 
@@ -10,121 +10,101 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 
-const JWT_SECRET = "apoiorede_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || "apoiorede_seguro_2026";
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ error: "Acesso não autorizado" });
-  }
-
-  jwt.verify(token, JWT_SECRET, (error, user) => {
-    if (error) {
-      return res.status(403).json({ error: "Token inválido" });
-    }
-
-    req.user = user;
-    next();
-  });
-}
-
-function requireAdmin(req, res, next) {
-  if (req.user.role !== "ADMIN") {
-    return res.status(403).json({
-      error: "Apenas administradores podem realizar esta ação",
+  if (!authHeader) {
+    return res.status(401).json({
+      error: "Token não enviado",
     });
   }
 
-  next();
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      error: "Token inválido",
+    });
+  }
 }
 
+/* =========================
+   HEALTH
+========================= */
+
 app.get("/", (req, res) => {
-  res.send("API ApoioRede funcionando 🚀");
+  res.json({
+    status: "ok",
+    message: "ApoioRede API online",
+  });
 });
 
-app.post("/auth/register", async (req, res) => {
+/* =========================
+   AUTH
+========================= */
+
+app.post("/register", async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const { name, email, password } = req.body;
+
+    const userExists = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (userExists) {
+      return res.status(400).json({
+        error: "Usuário já existe",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
-        name: req.body.name,
-        email: req.body.email,
+        name,
+        email,
         password: hashedPassword,
-        role: req.body.role || "OPERADOR",
       },
     });
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      message: "Cadastro realizado com sucesso",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    res.json(user);
   } catch (error) {
     console.log(error);
 
-    res.status(400).json({
+    res.status(500).json({
       error: "Erro ao cadastrar usuário",
-      details: error.message,
     });
   }
 });
 
-app.post("/auth/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
+    const { email, password } = req.body;
+
     const user = await prisma.user.findUnique({
-      where: {
-        email: req.body.email,
-      },
+      where: { email },
     });
 
     if (!user) {
-      return res.status(401).json({
-        error: "E-mail ou senha inválidos",
+      return res.status(400).json({
+        error: "Usuário não encontrado",
       });
     }
 
-    let passwordMatch = false;
+    const validPassword = await bcrypt.compare(
+      password,
+      user.password
+    );
 
-    if (user.password.startsWith("$2b$")) {
-      passwordMatch = await bcrypt.compare(req.body.password, user.password);
-    } else {
-      passwordMatch = req.body.password === user.password;
-
-      if (passwordMatch) {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-        await prisma.user.update({
-          where: {
-            id: user.id,
-          },
-          data: {
-            password: hashedPassword,
-          },
-        });
-      }
-    }
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        error: "E-mail ou senha inválidos",
+    if (!validPassword) {
+      return res.status(400).json({
+        error: "Senha inválida",
       });
     }
 
@@ -135,115 +115,197 @@ app.post("/auth/login", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      {
+        expiresIn: "7d",
+      }
     );
 
     res.json({
-      message: "Login realizado com sucesso",
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     console.log(error);
 
-    res.status(400).json({
-      error: "Erro ao fazer login",
-      details: error.message,
+    res.status(500).json({
+      error: "Erro no login",
     });
   }
 });
 
-app.get("/clinics", authenticateToken, async (req, res) => {
-  const clinics = await prisma.clinic.findMany();
-  res.json(clinics);
+/* =========================
+   USERS
+========================= */
+
+app.get("/users", authMiddleware, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar usuários",
+    });
+  }
 });
 
-app.post("/clinics", authenticateToken, requireAdmin, async (req, res) => {
-  const clinic = await prisma.clinic.create({
-    data: {
-      name: req.body.name,
-      city: req.body.city,
-      state: req.body.state,
-      whatsapp: req.body.whatsapp,
-    },
-  });
+/* =========================
+   CLINICS
+========================= */
 
-  res.json(clinic);
+app.get("/clinics", authMiddleware, async (req, res) => {
+  try {
+    const clinics = await prisma.clinic.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json(clinics);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar clínicas",
+    });
+  }
 });
 
-app.get("/requests", authenticateToken, async (req, res) => {
-  const requests = await prisma.request.findMany({
-    include: {
-      clinic: true,
-    },
-  });
+app.post("/clinics", authMiddleware, async (req, res) => {
+  try {
+    const clinic = await prisma.clinic.create({
+      data: req.body,
+    });
 
-  res.json(requests);
+    res.json(clinic);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao criar clínica",
+    });
+  }
 });
 
-app.post("/requests", authenticateToken, async (req, res) => {
-  const request = await prisma.request.create({
-    data: {
-      patientName: req.body.patientName,
-      procedure: req.body.procedure,
-      city: req.body.city || "",
-      observation: req.body.observation || "",
-      status: "PENDENTE",
-      clinicId: req.body.clinicId || null,
-    },
-  });
+/* =========================
+   REQUESTS
+========================= */
 
-  res.json(request);
+app.get("/requests", authMiddleware, async (req, res) => {
+  try {
+    const requests = await prisma.request.findMany({
+      include: {
+        clinic: true,
+        user: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json(requests);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar solicitações",
+    });
+  }
 });
 
-app.put("/requests/:id", authenticateToken, async (req, res) => {
-  const request = await prisma.request.update({
-    where: {
-      id: req.params.id,
-    },
-    data: {
-      patientName: req.body.patientName,
-      procedure: req.body.procedure,
-      city: req.body.city || "",
-      observation: req.body.observation || "",
-      clinicId: req.body.clinicId || null,
-    },
-  });
+app.post("/requests", authMiddleware, async (req, res) => {
+  try {
+    const request = await prisma.request.create({
+      data: {
+        ...req.body,
+        userId: req.user.id,
+      },
+    });
 
-  res.json(request);
+    await prisma.history.create({
+      data: {
+        action: "Solicitação criada",
+        requestId: request.id,
+        userId: req.user.id,
+      },
+    });
+
+    res.json(request);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao criar solicitação",
+    });
+  }
 });
 
-app.put("/requests/:id/status", authenticateToken, async (req, res) => {
-  const request = await prisma.request.update({
-    where: {
-      id: req.params.id,
-    },
-    data: {
-      status: req.body.status,
-    },
-  });
+app.put("/requests/:id", authMiddleware, async (req, res) => {
+  try {
+    const request = await prisma.request.update({
+      where: {
+        id: req.params.id,
+      },
+      data: req.body,
+    });
 
-  res.json(request);
+    await prisma.history.create({
+      data: {
+        action: "Solicitação atualizada",
+        requestId: request.id,
+        userId: req.user.id,
+      },
+    });
+
+    res.json(request);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao atualizar solicitação",
+    });
+  }
 });
 
-app.delete("/requests/:id", authenticateToken, requireAdmin, async (req, res) => {
-  await prisma.request.delete({
-    where: {
-      id: req.params.id,
-    },
-  });
+/* =========================
+   HISTORY
+========================= */
 
-  res.json({
-    message: "Solicitação excluída com sucesso",
-  });
+app.get("/history/:requestId", authMiddleware, async (req, res) => {
+  try {
+    const history = await prisma.history.findMany({
+      where: {
+        requestId: req.params.requestId,
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json(history);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Erro ao buscar histórico",
+    });
+  }
 });
 
-const PORT = process.env.PORT || 3333;
+/* =========================
+   START
+========================= */
+
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
