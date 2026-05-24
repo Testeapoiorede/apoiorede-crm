@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 
 const app = express();
@@ -8,6 +9,8 @@ const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+
+const JWT_SECRET = "apoiorede_secret_key";
 
 app.get("/", (req, res) => {
   res.send("API ApoioRede funcionando 🚀");
@@ -26,8 +29,21 @@ app.post("/auth/register", async (req, res) => {
       },
     });
 
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
     res.json({
       message: "Cadastro realizado com sucesso",
+      token,
       user: {
         id: user.id,
         name: user.name,
@@ -89,8 +105,21 @@ app.post("/auth/login", async (req, res) => {
       });
     }
 
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
     res.json({
       message: "Login realizado com sucesso",
+      token,
       user: {
         id: user.id,
         name: user.name,
