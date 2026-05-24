@@ -16,20 +16,30 @@ function getAuthHeaders() {
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [isLogin, setIsLogin] = useState(true);
+  const [activePage, setActivePage] =
+    useState("DASHBOARD");
 
   const [toast, setToast] = useState("");
+  const [message, setMessage] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] =
+    useState("");
 
-  const [requests, setRequests] = useState<any[]>([]);
-  const [clinics, setClinics] = useState<any[]>([]);
+  const [requests, setRequests] = useState<
+    any[]
+  >([]);
 
-  const [filter, setFilter] = useState("TODOS");
-  const [search, setSearch] = useState("");
-  const [message, setMessage] = useState("");
-  const [activePage, setActivePage] = useState("DASHBOARD");
+  const [clinics, setClinics] = useState<
+    any[]
+  >([]);
+
+  const [filter, setFilter] =
+    useState("TODOS");
+
+  const [search, setSearch] =
+    useState("");
 
   const [showRequestModal, setShowRequestModal] =
     useState(false);
@@ -37,15 +47,29 @@ export default function Home() {
   const [showClinicModal, setShowClinicModal] =
     useState(false);
 
-  const [patientName, setPatientName] = useState("");
-  const [procedure, setProcedure] = useState("");
-  const [city, setCity] = useState("");
-  const [observation, setObservation] = useState("");
-  const [clinicId, setClinicId] = useState("");
+  const [patientName, setPatientName] =
+    useState("");
 
-  const [clinicName, setClinicName] = useState("");
-  const [clinicCity, setClinicCity] = useState("");
-  const [clinicState, setClinicState] = useState("");
+  const [procedure, setProcedure] =
+    useState("");
+
+  const [city, setCity] = useState("");
+
+  const [observation, setObservation] =
+    useState("");
+
+  const [clinicId, setClinicId] =
+    useState("");
+
+  const [clinicName, setClinicName] =
+    useState("");
+
+  const [clinicCity, setClinicCity] =
+    useState("");
+
+  const [clinicState, setClinicState] =
+    useState("");
+
   const [clinicWhatsapp, setClinicWhatsapp] =
     useState("");
 
@@ -77,7 +101,8 @@ export default function Home() {
         method: "POST",
 
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
 
         body: JSON.stringify({
@@ -103,8 +128,6 @@ export default function Home() {
 
       setUser(data.user);
 
-      setMessage("");
-
       loadData();
 
       showToast(
@@ -124,7 +147,8 @@ export default function Home() {
         method: "POST",
 
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
 
         body: JSON.stringify({
@@ -149,25 +173,31 @@ export default function Home() {
 
       setUser(data.user);
 
-      setMessage("");
-
       loadData();
 
       showToast(
         "Login realizado com sucesso."
       );
     } else {
-      setMessage(data.error || "Erro no login");
+      setMessage(
+        data.error || "Erro no login"
+      );
     }
   }
 
   function logout() {
-    localStorage.removeItem("apoiorede_user");
+    localStorage.removeItem(
+      "apoiorede_user"
+    );
 
-    localStorage.removeItem("apoiorede_token");
+    localStorage.removeItem(
+      "apoiorede_token"
+    );
 
     setUser(null);
-  }  async function loadData() {
+  }
+
+  async function loadData() {
     const requestsResponse = await fetch(
       `${API_URL}/requests`,
       {
@@ -288,36 +318,6 @@ export default function Home() {
     showToast("Status atualizado.");
   }
 
-  async function deleteRequest(id: string) {
-    if (
-      !confirm(
-        "Deseja excluir esta solicitação?"
-      )
-    )
-      return;
-
-    const response = await fetch(
-      `${API_URL}/requests/${id}`,
-      {
-        method: "DELETE",
-
-        headers: getAuthHeaders(),
-      }
-    );
-
-    if (!response.ok) {
-      showToast(
-        "Apenas ADMIN pode excluir solicitações."
-      );
-
-      return;
-    }
-
-    loadData();
-
-    showToast("Solicitação excluída.");
-  }
-
   const total = requests.length;
 
   const pendentes = requests.filter(
@@ -346,56 +346,15 @@ export default function Home() {
       return (
         matchStatus && matchSearch
       );
-    });  if (!user) {
+    });
+
+  if (!user) {
     return (
       <main style={loginPageStyle}>
         <section style={loginCardStyle}>
-          <h1 style={{ margin: 0 }}>
-            ApoioRede
-          </h1>
+          <h1>ApoioRede</h1>
 
-          <p
-            style={{
-              color: "#64748b",
-              marginBottom: 20,
-            }}
-          >
-            CRM odontológico
-          </p>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              marginBottom: 20,
-            }}
-          >
-            <button
-              onClick={() =>
-                setIsLogin(true)
-              }
-              style={
-                isLogin
-                  ? activeTab
-                  : inactiveTab
-              }
-            >
-              Login
-            </button>
-
-            <button
-              onClick={() =>
-                setIsLogin(false)
-              }
-              style={
-                !isLogin
-                  ? activeTab
-                  : inactiveTab
-              }
-            >
-              Cadastro
-            </button>
-          </div>
+          <p>CRM odontológico</p>
 
           {!isLogin && (
             <input
@@ -445,17 +404,6 @@ export default function Home() {
               ? "Entrar"
               : "Cadastrar"}
           </button>
-
-          {message && (
-            <p
-              style={{
-                color: "red",
-                marginTop: 15,
-              }}
-            >
-              {message}
-            </p>
-          )}
         </section>
       </main>
     );
@@ -463,12 +411,6 @@ export default function Home() {
 
   return (
     <main style={appStyle}>
-      {toast && (
-        <div style={toastStyle}>
-          {toast}
-        </div>
-      )}
-
       <aside style={sidebarStyle}>
         <div>
           <h1 style={sidebarLogo}>
@@ -480,22 +422,73 @@ export default function Home() {
           </p>
 
           <nav style={navStyle}>
-            <span style={navActive}>
-<button onClick={() => setActivePage("DASHBOARD")} style={activePage === "DASHBOARD" ? navActive : navButton}>
-  📊 Dashboard
-</button>
+            <button
+              onClick={() =>
+                setActivePage(
+                  "DASHBOARD"
+                )
+              }
+              style={
+                activePage ===
+                "DASHBOARD"
+                  ? navActive
+                  : navButton
+              }
+            >
+              📊 Dashboard
+            </button>
 
-<button onClick={() => setActivePage("SOLICITACOES")} style={activePage === "SOLICITACOES" ? navActive : navButton}>
-  📝 Solicitações
-</button>
+            <button
+              onClick={() =>
+                setActivePage(
+                  "SOLICITACOES"
+                )
+              }
+              style={
+                activePage ===
+                "SOLICITACOES"
+                  ? navActive
+                  : navButton
+              }
+            >
+              📝 Solicitações
+            </button>
 
-<button onClick={() => setActivePage("CLINICAS")} style={activePage === "CLINICAS" ? navActive : navButton}>
-  🏥 Clínicas
-</button>
+            <button
+              onClick={() =>
+                setActivePage(
+                  "CLINICAS"
+                )
+              }
+              style={
+                activePage ===
+                "CLINICAS"
+                  ? navActive
+                  : navButton
+              }
+            >
+              🏥 Clínicas
+            </button>
 
-<button onClick={() => setActivePage("METRICAS")} style={activePage === "METRICAS" ? navActive : navButton}>
-  📈 Métricas
-</button>
+            <button
+              onClick={() =>
+                setActivePage(
+                  "METRICAS"
+                )
+              }
+              style={
+                activePage ===
+                "METRICAS"
+                  ? navActive
+                  : navButton
+              }
+            >
+              📈 Métricas
+            </button>
+          </nav>
+        </div>
+
+        <button
           onClick={logout}
           style={logoutButton}
         >
@@ -506,487 +499,209 @@ export default function Home() {
       <section style={mainStyle}>
         <header style={topbarStyle}>
           <div>
-            <h2 style={{ margin: 0 }}>
-              Dashboard
-            </h2>
+            <h2>Dashboard</h2>
 
-            <p
-              style={{
-                marginTop: 5,
-                color: "#64748b",
-              }}
-            >
-              Bem-vinda,{" "}
-              {user.name} —{" "}
-              {user.role}
+            <p>
+              Bem-vinda, {user.name}
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
-            }}
+          <button
+            onClick={() =>
+              setShowRequestModal(true)
+            }
+            style={primarySmallButton}
           >
-            <button
-              onClick={() =>
-                setShowRequestModal(true)
-              }
-              style={primarySmallButton}
-            >
-              + Solicitação
-            </button>
+            + Solicitação
+          </button>
+        </header>
 
-            {user.role === "ADMIN" && (
-              <button
-                onClick={() =>
-                  setShowClinicModal(true)
-                }
-                style={
-                  secondarySmallButton
-                }
-              >
-                + Clínica
-              </button>
-            )}
+        {activePage ===
+          "DASHBOARD" && (
+          <>
+            <div style={metricsStyle}>
+              <div style={metricCard}>
+                <span>Total</span>
 
-            <div style={avatarStyle}>
-              {user.name?.charAt(0)}
+                <strong
+                  style={{
+                    fontSize: 28,
+                  }}
+                >
+                  {total}
+                </strong>
+              </div>
+
+              <div style={metricCard}>
+                <span>
+                  Pendentes
+                </span>
+
+                <strong
+                  style={{
+                    color:
+                      "#d97706",
+
+                    fontSize: 28,
+                  }}
+                >
+                  {pendentes}
+                </strong>
+              </div>
+
+              <div style={metricCard}>
+                <span>
+                  Aprovadas
+                </span>
+
+                <strong
+                  style={{
+                    color:
+                      "#16a34a",
+
+                    fontSize: 28,
+                  }}
+                >
+                  {aprovadas}
+                </strong>
+              </div>
+
+              <div style={metricCard}>
+                <span>
+                  Negadas
+                </span>
+
+                <strong
+                  style={{
+                    color:
+                      "#dc2626",
+
+                    fontSize: 28,
+                  }}
+                >
+                  {negadas}
+                </strong>
+              </div>
             </div>
-          </div>
-        </header>        <div style={metricsStyle}>
-          <div style={metricCard}>
-            <span>Total</span>
 
-            <strong
-              style={{ fontSize: 28 }}
-            >
-              {total}
-            </strong>
-          </div>
+            <section style={panelStyle}>
+              <div
+                style={toolbarStyle}
+              >
+                <input
+                  placeholder="Buscar paciente..."
+                  value={search}
+                  onChange={(e) =>
+                    setSearch(
+                      e.target.value
+                    )
+                  }
+                  style={smallInput}
+                />
 
-          <div style={metricCard}>
-            <span>Pendentes</span>
-
-            <strong
-              style={{
-                color: "#d97706",
-                fontSize: 28,
-              }}
-            >
-              {pendentes}
-            </strong>
-          </div>
-
-          <div style={metricCard}>
-            <span>Aprovadas</span>
-
-            <strong
-              style={{
-                color: "#16a34a",
-                fontSize: 28,
-              }}
-            >
-              {aprovadas}
-            </strong>
-          </div>
-
-          <div style={metricCard}>
-            <span>Negadas</span>
-
-            <strong
-              style={{
-                color: "#dc2626",
-                fontSize: 28,
-              }}
-            >
-              {negadas}
-            </strong>
-          </div>
-        </div>
-
-        <section style={panelStyle}>
-          <div style={toolbarStyle}>
-            <input
-              placeholder="Buscar paciente..."
-              value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-              style={smallInput}
-            />
-
-            <select
-              value={filter}
-              onChange={(e) =>
-                setFilter(
-                  e.target.value
-                )
-              }
-              style={smallInput}
-            >
-              <option value="TODOS">
-                Todos
-              </option>
-
-              <option value="PENDENTE">
-                Pendentes
-              </option>
-
-              <option value="APROVADO">
-                Aprovados
-              </option>
-
-              <option value="NEGADO">
-                Negados
-              </option>
-            </select>
-          </div>
-
-          <div
-            style={{
-              overflowX: "auto",
-            }}
-          >
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>
-                    Paciente
-                  </th>
-
-                  <th style={thStyle}>
-                    Procedimento
-                  </th>
-
-                  <th style={thStyle}>
-                    Cidade
-                  </th>
-
-                  <th style={thStyle}>
-                    Clínica
-                  </th>
-
-                  <th style={thStyle}>
-                    Status
-                  </th>
-
-                  <th style={thStyle}>
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredRequests.map(
-                  (item) => (
-                    <tr key={item.id}>
-                      <td style={tdStyle}>
-                        {
-                          item.patientName
-                        }
-                      </td>
-
-                      <td style={tdStyle}>
-                        {item.procedure}
-                      </td>
-
-                      <td style={tdStyle}>
-                        {item.city ||
-                          "Não informada"}
-                      </td>
-
-                      <td style={tdStyle}>
-                        {item.clinic
-                          ? `${item.clinic.name} - ${item.clinic.city}/${item.clinic.state}`
-                          : "Não vinculada"}
-                      </td>
-
-                      <td style={tdStyle}>
-                        <span
-                          style={statusStyle(
-                            item.status
-                          )}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            gap: 6,
-                            flexWrap:
-                              "wrap",
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              updateStatus(
-                                item.id,
-                                "PENDENTE"
-                              )
-                            }
-                            style={
-                              yellowBtn
-                            }
-                          >
-                            Pendente
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              updateStatus(
-                                item.id,
-                                "APROVADO"
-                              )
-                            }
-                            style={
-                              greenBtn
-                            }
-                          >
-                            Aprovar
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              updateStatus(
-                                item.id,
-                                "NEGADO"
-                              )
-                            }
-                            style={
-                              redBtn
-                            }
-                          >
-                            Negar
-                          </button>
-
-                          {user.role ===
-                            "ADMIN" && (
-                            <button
-                              onClick={() =>
-                                deleteRequest(
-                                  item.id
-                                )
-                              }
-                              style={
-                                darkBtn
-                              }
-                            >
-                              Excluir
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>      {showRequestModal && (
-        <div style={modalOverlay}>
-          <div style={modalCard}>
-            <h3>
-              Nova solicitação
-            </h3>
-
-            <input
-              placeholder="Nome do paciente"
-              value={patientName}
-              onChange={(e) =>
-                setPatientName(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
-
-            <input
-              placeholder="Procedimento"
-              value={procedure}
-              onChange={(e) =>
-                setProcedure(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
-
-            <input
-              placeholder="Cidade"
-              value={city}
-              onChange={(e) =>
-                setCity(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
-
-            <select
-              value={clinicId}
-              onChange={(e) =>
-                setClinicId(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            >
-              <option value="">
-                Selecione uma clínica
-              </option>
-
-              {clinics.map(
-                (clinic) => (
-                  <option
-                    key={clinic.id}
-                    value={clinic.id}
-                  >
-                    {clinic.name} -{" "}
-                    {clinic.city}/
-                    {clinic.state}
+                <select
+                  value={filter}
+                  onChange={(e) =>
+                    setFilter(
+                      e.target.value
+                    )
+                  }
+                  style={smallInput}
+                >
+                  <option value="TODOS">
+                    Todos
                   </option>
-                )
-              )}
-            </select>
 
-            <textarea
-              placeholder="Observação"
-              value={observation}
-              onChange={(e) =>
-                setObservation(
-                  e.target.value
-                )
-              }
-              style={{
-                ...inputStyle,
-                minHeight: 90,
-              }}
-            />
+                  <option value="PENDENTE">
+                    Pendentes
+                  </option>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-              }}
-            >
-              <button
-                onClick={
-                  createRequest
-                }
-                style={
-                  primaryButton
-                }
-              >
-                Salvar
-              </button>
+                  <option value="APROVADO">
+                    Aprovados
+                  </option>
 
-              <button
-                onClick={() =>
-                  setShowRequestModal(
-                    false
-                  )
-                }
-                style={cancelButton}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  <option value="NEGADO">
+                    Negados
+                  </option>
+                </select>
+              </div>
 
-      {showClinicModal && (
-        <div style={modalOverlay}>
-          <div style={modalCard}>
-            <h3>Nova clínica</h3>
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>
+                      Paciente
+                    </th>
 
-            <input
-              placeholder="Nome da clínica"
-              value={clinicName}
-              onChange={(e) =>
-                setClinicName(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
+                    <th style={thStyle}>
+                      Procedimento
+                    </th>
 
-            <input
-              placeholder="Cidade"
-              value={clinicCity}
-              onChange={(e) =>
-                setClinicCity(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
+                    <th style={thStyle}>
+                      Cidade
+                    </th>
 
-            <input
-              placeholder="Estado"
-              value={clinicState}
-              onChange={(e) =>
-                setClinicState(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
+                    <th style={thStyle}>
+                      Clínica
+                    </th>
 
-            <input
-              placeholder="WhatsApp"
-              value={clinicWhatsapp}
-              onChange={(e) =>
-                setClinicWhatsapp(
-                  e.target.value
-                )
-              }
-              style={inputStyle}
-            />
+                    <th style={thStyle}>
+                      Status
+                    </th>
+                  </tr>
+                </thead>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-              }}
-            >
-              <button
-                onClick={
-                  createClinic
-                }
-                style={
-                  primaryButton
-                }
-              >
-                Salvar
-              </button>
+                <tbody>
+                  {filteredRequests.map(
+                    (item) => (
+                      <tr key={item.id}>
+                        <td style={tdStyle}>
+                          {
+                            item.patientName
+                          }
+                        </td>
 
-              <button
-                onClick={() =>
-                  setShowClinicModal(
-                    false
-                  )
-                }
-                style={cancelButton}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                        <td style={tdStyle}>
+                          {
+                            item.procedure
+                          }
+                        </td>
+
+                        <td style={tdStyle}>
+                          {item.city}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {item.clinic
+                            ?.name ||
+                            "-"}
+                        </td>
+
+                        <td style={tdStyle}>
+                          <span
+                            style={statusStyle(
+                              item.status
+                            )}
+                          >
+                            {
+                              item.status
+                            }
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
+      </section>
     </main>
   );
-}const appStyle = {
+}
+
+const appStyle = {
   minHeight: "100vh",
   display: "flex",
   background: "#f1f5f9",
@@ -1001,7 +716,6 @@ const sidebarStyle = {
 };
 
 const sidebarLogo = {
-  margin: 0,
   fontSize: 28,
 };
 
@@ -1019,11 +733,12 @@ const navActive = {
   background: "#2563eb",
   padding: 12,
   borderRadius: 12,
+  border: 0,
+  color: "white",
+  cursor: "pointer",
+  textAlign: "left" as const,
 };
 
-const navItem = {
-  padding: 12,
-};
 const navButton = {
   padding: 12,
   border: 0,
@@ -1038,50 +753,24 @@ const logoutButton = {
   marginTop: 40,
   width: "100%",
   padding: 12,
-  border: 0,
-  borderRadius: 12,
-  cursor: "pointer",
 };
 
 const mainStyle = {
   flex: 1,
   padding: 32,
-  overflowX: "hidden" as const,
 };
 
 const topbarStyle = {
   display: "flex",
   justifyContent:
     "space-between",
-
-  alignItems: "center",
-
-  marginBottom: 24,
-
-  flexWrap: "wrap" as const,
-
-  gap: 12,
-};
-
-const avatarStyle = {
-  width: 45,
-  height: 45,
-  borderRadius: 999,
-  background: "#2563eb",
-  color: "white",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
 };
 
 const metricsStyle = {
   display: "grid",
-
   gridTemplateColumns:
     "repeat(auto-fit,minmax(220px,1fr))",
-
   gap: 18,
-
   marginBottom: 24,
 };
 
@@ -1091,7 +780,9 @@ const metricCard = {
   borderRadius: 18,
 
   display: "flex",
-  flexDirection: "column" as const,
+  flexDirection:
+    "column" as const,
+
   gap: 12,
 };
 
@@ -1105,63 +796,35 @@ const toolbarStyle = {
   display: "flex",
   gap: 12,
   marginBottom: 18,
-  flexWrap: "wrap" as const,
 };
 
 const inputStyle = {
   width: "100%",
   padding: 13,
-  border:
-    "1px solid #cbd5e1",
   borderRadius: 12,
   marginBottom: 12,
-  boxSizing:
-    "border-box" as const,
 };
 
 const smallInput = {
   padding: 10,
-  border:
-    "1px solid #cbd5e1",
   borderRadius: 10,
 };
 
 const primaryButton = {
   width: "100%",
   padding: 14,
-  border: 0,
   borderRadius: 12,
   background: "#2563eb",
   color: "white",
-  cursor: "pointer",
+  border: 0,
 };
 
 const primarySmallButton = {
   padding: "10px 14px",
-  border: 0,
   borderRadius: 12,
   background: "#2563eb",
   color: "white",
-  cursor: "pointer",
-};
-
-const secondarySmallButton = {
-  padding: "10px 14px",
-  border:
-    "1px solid #cbd5e1",
-  borderRadius: 12,
-  background: "white",
-  cursor: "pointer",
-};
-
-const cancelButton = {
-  width: "100%",
-  padding: 14,
-  border:
-    "1px solid #cbd5e1",
-  borderRadius: 12,
-  background: "white",
-  cursor: "pointer",
+  border: 0,
 };
 
 const loginPageStyle = {
@@ -1170,7 +833,6 @@ const loginPageStyle = {
   alignItems: "center",
   justifyContent:
     "center",
-  background: "#eef2f7",
 };
 
 const loginCardStyle = {
@@ -1180,30 +842,8 @@ const loginCardStyle = {
   borderRadius: 24,
 };
 
-const activeTab = {
-  flex: 1,
-  padding: 12,
-  border: 0,
-  borderRadius: 12,
-  background: "#2563eb",
-  color: "white",
-  cursor: "pointer",
-};
-
-const inactiveTab = {
-  flex: 1,
-  padding: 12,
-  border: 0,
-  borderRadius: 12,
-  cursor: "pointer",
-};
-
 const tableStyle = {
   width: "100%",
-  borderCollapse:
-    "collapse" as const,
-
-  minWidth: 850,
 };
 
 const thStyle = {
@@ -1213,90 +853,6 @@ const thStyle = {
 
 const tdStyle = {
   padding: 14,
-  borderTop:
-    "1px solid #e2e8f0",
-};
-
-const toastStyle = {
-  position: "fixed" as const,
-
-  top: 20,
-
-  right: 20,
-
-  background: "#16a34a",
-
-  color: "white",
-
-  padding: "14px 18px",
-
-  borderRadius: 12,
-
-  zIndex: 20,
-};
-
-const modalOverlay = {
-  position: "fixed" as const,
-
-  inset: 0,
-
-  background:
-    "rgba(15,23,42,.55)",
-
-  display: "flex",
-
-  alignItems: "center",
-
-  justifyContent:
-    "center",
-
-  padding: 20,
-
-  zIndex: 10,
-};
-
-const modalCard = {
-  width: "100%",
-  maxWidth: 520,
-  background: "white",
-  borderRadius: 20,
-  padding: 24,
-};
-
-const yellowBtn = {
-  background: "#fef3c7",
-  color: "#92400e",
-  border: 0,
-  padding: "7px 12px",
-  borderRadius: 999,
-  cursor: "pointer",
-};
-
-const greenBtn = {
-  background: "#dcfce7",
-  color: "#166534",
-  border: 0,
-  padding: "7px 12px",
-  borderRadius: 999,
-  cursor: "pointer",
-};
-
-const redBtn = {
-  background: "#fee2e2",
-  color: "#991b1b",
-  border: 0,
-  padding: "7px 12px",
-  borderRadius: 999,
-  cursor: "pointer",
-};
-
-const darkBtn = {
-  background: "#111827",
-  color: "white",
-  border: 0,
-  padding: "7px 12px",
-  borderRadius: 999,
-  cursor: "pointer",
 };
 
 function statusStyle(
