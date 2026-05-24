@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 
 const app = express();
@@ -14,11 +15,13 @@ app.get("/", (req, res) => {
 
 app.post("/auth/register", async (req, res) => {
   try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
     const user = await prisma.user.create({
       data: {
         name: req.body.name,
         email: req.body.email,
-        password: req.body.password,
+        password: hashedPassword,
         role: req.body.role || "OPERADOR",
       },
     });
@@ -48,7 +51,18 @@ app.post("/auth/login", async (req, res) => {
       },
     });
 
-    if (!user || user.password !== req.body.password) {
+    if (!user) {
+      return res.status(401).json({
+        error: "E-mail ou senha inválidos",
+      });
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      req.body.password,
+      user.password
+    );
+
+    if (!passwordMatch) {
       return res.status(401).json({
         error: "E-mail ou senha inválidos",
       });
