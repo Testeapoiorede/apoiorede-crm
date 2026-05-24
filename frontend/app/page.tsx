@@ -1082,6 +1082,10 @@ const metricCard = {
   background: "white",
   padding: 24,
   borderRadius: 18,
+
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 12,
 };
 
 const panelStyle = {
