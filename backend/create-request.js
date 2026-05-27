@@ -1,17 +1,25 @@
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require('@prisma/client')
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  const request = await prisma.request.create({
+  const user = await prisma.user.create({
     data: {
-      patientName: "Maria Silva",
-      procedure: "Avaliação odontológica",
-      status: "PENDENTE",
-    },
-  });
+      name: 'Daniela',
+      email: 'admin@apoio.com',
+      password: '123456',
+      role: 'ADMIN'
+    }
+  })
 
-  console.log(request);
+  console.log('Usuário criado:')
+  console.log(user)
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
